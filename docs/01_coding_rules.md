@@ -15,6 +15,8 @@ request.security を使う場合は必ず以下を指定する。
 gaps = barmerge.gaps_off
 lookahead = barmerge.lookahead_off
 
+```
+
 確定足
 
 * Triggerは確定足で判定する
