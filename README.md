@@ -52,6 +52,42 @@
 ## ディレクトリ構成
 
 ```text
-docs/
-src/
-results/
+ema-structure-strategy-lab/
+│
+├── README.md
+├── CHANGELOG.md
+├── ROADMAP.md
+│
+├── docs/
+│   ├── 01_coding_rules.md
+│   ├── 02_backtest_policy.md
+│   ├── 03_idea_A_ema_pullback.md
+│   ├── 04_idea_B_ema_compression_breakout.md
+│   ├── 05_idea_C_htf_ema_ltf_trigger.md
+│   └── 06_comparison.md
+│
+├── src/
+│   ├── idea_A/
+│   │   ├── indicator_v1.pine
+│   │   └── strategy_v1.pine
+│   │
+│   ├── idea_B/
+│   │   ├── indicator_v1.pine
+│   │   └── strategy_v1.pine
+│   │
+│   └── idea_C/
+│       ├── indicator_v1.pine
+│       └── strategy_v1.pine
+│
+└── results/
+    ├── idea_A/
+    │   ├── test_log.md
+    │   └── summary.md
+    │
+    ├── idea_B/
+    │   ├── test_log.md
+    │   └── summary.md
+    │
+    └── idea_C/
+        ├── test_log.md
+        └── summary.md
