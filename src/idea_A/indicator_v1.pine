@@ -1,1 +1,217 @@
+//@version=6
+indicator("EMA Structure Pullback Indicator v1", overlay = true, max_lines_count = 500, max_labels_count = 500)
 
+//====================================================
+// Inputs
+//====================================================
+
+emaFastLen = input.int(20, "EMA Fast Length", minval = 1)
+emaMidLen = input.int(50, "EMA Middle Length", minval = 1)
+emaSlowLen = input.int(200, "EMA Slow Length", minval = 1)
+
+pullbackLookback = input.int(10, "Pullback Lookback Bars", minval = 1)
+
+useCooldown = input.bool(true, "Use Cooldown")
+cooldownBars = input.int(10, "Cooldown Bars", minval = 1)
+
+riskLookback = input.int(10, "SL Lookback Bars", minval = 1)
+rr = input.float(1.0, "RR", minval = 0.1, step = 0.1)
+riskLineBars = input.int(20, "Risk Line Forward Bars", minval = 1)
+
+showEma = input.bool(true, "Show EMA")
+showSetupBg = input.bool(true, "Show Setup Background")
+showSignals = input.bool(true, "Show Trigger Signals")
+showRiskLines = input.bool(true, "Show SL / TP Lines")
+
+//====================================================
+// EMA
+//====================================================
+
+emaFast = ta.ema(close, emaFastLen)
+emaMid = ta.ema(close, emaMidLen)
+emaSlow = ta.ema(close, emaSlowLen)
+
+plot(showEma ? emaFast : na, "EMA Fast", color = color.orange, linewidth = 2)
+plot(showEma ? emaMid : na, "EMA Middle", color = color.blue, linewidth = 2)
+plot(showEma ? emaSlow : na, "EMA Slow", color = color.gray, linewidth = 2)
+
+//====================================================
+// Setup Conditions
+//====================================================
+
+emaBullStructure = false
+emaBearStructure = false
+
+if emaFast > emaMid
+    if emaMid > emaSlow
+        emaBullStructure := true
+
+if emaFast < emaMid
+    if emaMid < emaSlow
+        emaBearStructure := true
+
+longPricePosition = close > emaMid
+shortPricePosition = close < emaMid
+
+longPullbackDistance = low - emaFast
+shortPullbackDistance = high - emaFast
+
+longPullbackTouched = ta.lowest(longPullbackDistance, pullbackLookback) <= 0
+shortPullbackTouched = ta.highest(shortPullbackDistance, pullbackLookback) >= 0
+
+longSetup = false
+shortSetup = false
+
+if emaBullStructure
+    if longPricePosition
+        if longPullbackTouched
+            longSetup := true
+
+if emaBearStructure
+    if shortPricePosition
+        if shortPullbackTouched
+            shortSetup := true
+
+//====================================================
+// Trigger Conditions
+//====================================================
+
+longEmaRecross = false
+shortEmaRecross = false
+
+if close > emaFast
+    if close[1] <= emaFast[1]
+        longEmaRecross := true
+
+if close < emaFast
+    if close[1] >= emaFast[1]
+        shortEmaRecross := true
+
+longTriggerRaw = false
+shortTriggerRaw = false
+
+if longSetup
+    if longEmaRecross
+        if barstate.isconfirmed
+            longTriggerRaw := true
+
+if shortSetup
+    if shortEmaRecross
+        if barstate.isconfirmed
+            shortTriggerRaw := true
+
+//====================================================
+// Cooldown
+//====================================================
+
+var int lastLongSignalBar = na
+var int lastShortSignalBar = na
+
+longCooldownOk = true
+shortCooldownOk = true
+
+if useCooldown
+    longCooldownOk := false
+    if na(lastLongSignalBar)
+        longCooldownOk := true
+    else
+        if bar_index - lastLongSignalBar >= cooldownBars
+            longCooldownOk := true
+
+if useCooldown
+    shortCooldownOk := false
+    if na(lastShortSignalBar)
+        shortCooldownOk := true
+    else
+        if bar_index - lastShortSignalBar >= cooldownBars
+            shortCooldownOk := true
+
+longSignal = false
+shortSignal = false
+
+if longTriggerRaw
+    if longCooldownOk
+        longSignal := true
+
+if shortTriggerRaw
+    if shortCooldownOk
+        shortSignal := true
+
+if longSignal
+    lastLongSignalBar := bar_index
+
+if shortSignal
+    lastShortSignalBar := bar_index
+
+//====================================================
+// Setup Background
+//====================================================
+
+bgColorValue = color.new(color.white, 100)
+
+if showSetupBg
+    if longSetup
+        bgColorValue := color.new(color.green, 88)
+    if shortSetup
+        bgColorValue := color.new(color.red, 88)
+
+bgcolor(bgColorValue)
+
+//====================================================
+// Trigger Signals
+//====================================================
+
+plotshape(showSignals and longSignal, title = "Long Trigger", style = shape.triangleup, location = location.belowbar, color = color.lime, size = size.small, text = "L")
+plotshape(showSignals and shortSignal, title = "Short Trigger", style = shape.triangledown, location = location.abovebar, color = color.red, size = size.small, text = "S")
+
+//====================================================
+// Risk Lines
+//====================================================
+
+var line longSlLine = na
+var line longTpLine = na
+var line shortSlLine = na
+var line shortTpLine = na
+
+longSl = ta.lowest(low, riskLookback)
+shortSl = ta.highest(high, riskLookback)
+
+longRisk = close - longSl
+shortRisk = shortSl - close
+
+longTp = close + longRisk * rr
+shortTp = close - shortRisk * rr
+
+longRiskValid = longRisk > syminfo.mintick
+shortRiskValid = shortRisk > syminfo.mintick
+
+if longSignal
+    if showRiskLines
+        if longRiskValid
+            if not na(longSlLine)
+                line.delete(longSlLine)
+                longSlLine := na
+            if not na(longTpLine)
+                line.delete(longTpLine)
+                longTpLine := na
+            longSlLine := line.new(bar_index, longSl, bar_index + riskLineBars, longSl, xloc = xloc.bar_index, extend = extend.none, color = color.red, style = line.style_solid, width = 1)
+            longTpLine := line.new(bar_index, longTp, bar_index + riskLineBars, longTp, xloc = xloc.bar_index, extend = extend.none, color = color.lime, style = line.style_solid, width = 1)
+
+if shortSignal
+    if showRiskLines
+        if shortRiskValid
+            if not na(shortSlLine)
+                line.delete(shortSlLine)
+                shortSlLine := na
+            if not na(shortTpLine)
+                line.delete(shortTpLine)
+                shortTpLine := na
+            shortSlLine := line.new(bar_index, shortSl, bar_index + riskLineBars, shortSl, xloc = xloc.bar_index, extend = extend.none, color = color.red, style = line.style_solid, width = 1)
+            shortTpLine := line.new(bar_index, shortTp, bar_index + riskLineBars, shortTp, xloc = xloc.bar_index, extend = extend.none, color = color.lime, style = line.style_solid, width = 1)
+
+//====================================================
+// Alerts
+//====================================================
+
+alertcondition(longSignal, title = "Long Trigger", message = "EMA Structure Pullback v1 Long Trigger")
+alertcondition(shortSignal, title = "Short Trigger", message = "EMA Structure Pullback v1 Short Trigger")
