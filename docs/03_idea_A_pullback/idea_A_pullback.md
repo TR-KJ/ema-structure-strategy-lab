@@ -81,3 +81,35 @@ TP：
 - Trigger確定足終値を基準にRR1.0で計算
 
 今後、SLが遠すぎる場合は、Trigger足を除外した直近10本も比較する。
+
+# Idea A EMA Pullback Test Log
+
+## 2026-xx-xx Indicator v1 Visual Check
+
+### 対象
+
+- EMA Structure Pullback Indicator v1
+- 1分足
+- EMA20 / EMA50 / EMA200
+- HTFフィルターなし
+
+### 確認内容
+
+- EMA20 / EMA50 / EMA200 の表示 OK
+- Long / Short Setup 背景表示 OK
+- Trigger矢印表示 OK
+- Cooldown挙動 OK
+- SL/TP候補ライン表示 OK
+
+### メモ
+
+- v1のSetup判定は方向付きタッチではない
+- Long：過去10本以内に low <= EMA20
+- Short：過去10本以内に high >= EMA20
+- SL/TPはTrigger確定足を含む直近10本で計算
+- TPはTrigger確定足終値基準のRR1.0
+
+### 結論
+
+Indicator v1の挙動は問題なし。
+次は同一ロジックでStrategy v1を作成する。
