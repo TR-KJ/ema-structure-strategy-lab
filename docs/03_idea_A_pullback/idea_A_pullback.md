@@ -139,3 +139,10 @@ v1.2では、TP/SLを `strategy.position_avg_price` 基準に変更した。
 このため、v1.2はStrategy実装として不安定と判断し、以降の比較対象から除外する。
 
 今後は、v1 / v1.1 と同様に、Trigger確定足時点でSL/TPを固定し、EntryとExitを同一Entryブロック内で発注する方式に戻す。
+
+## Strategy v1.3 Trigger Strength Test
+
+v1.3では、Indicator版は作成しない。
+理由は、Setup条件はv1.1から変更せず、Trigger条件のみを強化するため。
+
+Strategy上のplotshapeとEntry位置で挙動確認する。
