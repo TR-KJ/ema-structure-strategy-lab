@@ -16,8 +16,8 @@
 
 | ID | 手法名 | 内容 | 状態 |
 |---|---|---|---|
-| A | EMA Pullback | EMA順行中の押し戻り再加速 | 優先検証 |
-| B | EMA Compression Breakout | EMA収縮後の拡散ブレイク | 未着手 |
+| A | EMA Pullback | EMA順行中の押し戻り再加速 | 終了　不採用 |
+| B | EMA Compression Breakout | EMA収縮後の拡散ブレイク | 開発中 |
 | C | HTF EMA Touch → LTF Trigger | 15分EMA接触後、1分再加速 | 未着手 |
 
 ## 開発方針
