@@ -1,0 +1,220 @@
+//@version=6
+strategy("EMA Compression Breakout Strategy v1", overlay = true, initial_capital = 1000000, default_qty_type = strategy.percent_of_equity, default_qty_value = 2, commission_type = strategy.commission.percent, commission_value = 0.04, slippage = 2, pyramiding = 0, process_orders_on_close = false, calc_on_every_tick = false, max_lines_count = 500, max_labels_count = 500)
+
+//====================================================
+// Inputs
+//====================================================
+
+emaFastLen = input.int(20, "EMA Fast Length", minval = 1)
+emaMidLen = input.int(50, "EMA Middle Length", minval = 1)
+emaSlowLen = input.int(100, "EMA Slow Length", minval = 1)
+
+compressionTicks = input.int(50, "Compression Ticks", minval = 1)
+compressionLookback = input.int(20, "Compression Lookback Bars", minval = 1)
+requiredCompressionBars = input.int(10, "Required Compression Bars", minval = 1)
+
+rangeLen = input.int(20, "Range Length", minval = 1)
+
+useCooldown = input.bool(true, "Use Cooldown")
+cooldownBars = input.int(20, "Cooldown Bars", minval = 1)
+
+rr = input.float(1.0, "RR", minval = 0.1, step = 0.1)
+
+showEma = input.bool(true, "Show EMA")
+showCompressionBg = input.bool(true, "Show Compression Background")
+showRangeLines = input.bool(true, "Show Range Lines")
+showSignals = input.bool(true, "Show Entry Signals")
+
+//====================================================
+// EMA
+//====================================================
+
+emaFast = ta.ema(close, emaFastLen)
+emaMid = ta.ema(close, emaMidLen)
+emaSlow = ta.ema(close, emaSlowLen)
+
+plot(showEma ? emaFast : na, "EMA Fast", color = color.orange, linewidth = 2)
+plot(showEma ? emaMid : na, "EMA Middle", color = color.blue, linewidth = 2)
+plot(showEma ? emaSlow : na, "EMA Slow", color = color.gray, linewidth = 2)
+
+//====================================================
+// Compression Setup
+//====================================================
+
+compressionValue = syminfo.mintick * compressionTicks
+
+emaFastMidDistance = math.abs(emaFast - emaMid)
+emaMidSlowDistance = math.abs(emaMid - emaSlow)
+
+isCompressedBar = false
+
+if emaFastMidDistance <= compressionValue
+    if emaMidSlowDistance <= compressionValue
+        isCompressedBar := true
+
+compressionBarValue = isCompressedBar ? 1.0 : 0.0
+compressionCountRaw = ta.sma(compressionBarValue, compressionLookback) * compressionLookback
+compressionCount = na(compressionCountRaw) ? 0.0 : compressionCountRaw
+
+compressionSetup = false
+
+if compressionCount >= requiredCompressionBars
+    compressionSetup := true
+
+//====================================================
+// Range
+//====================================================
+
+rangeHigh = ta.highest(high, rangeLen)[1]
+rangeLow = ta.lowest(low, rangeLen)[1]
+
+plot(showRangeLines ? rangeHigh : na, "Range High", color = color.new(color.green, 0), linewidth = 1, style = plot.style_linebr)
+plot(showRangeLines ? rangeLow : na, "Range Low", color = color.new(color.red, 0), linewidth = 1, style = plot.style_linebr)
+
+//====================================================
+// Trigger Conditions
+//====================================================
+
+longEmaDirection = emaFast > emaMid
+shortEmaDirection = emaFast < emaMid
+
+longRangeBreak = false
+shortRangeBreak = false
+
+if not na(rangeHigh)
+    if close > rangeHigh
+        longRangeBreak := true
+
+if not na(rangeLow)
+    if close < rangeLow
+        shortRangeBreak := true
+
+longTriggerRaw = false
+shortTriggerRaw = false
+
+if compressionSetup
+    if longEmaDirection
+        if longRangeBreak
+            if barstate.isconfirmed
+                longTriggerRaw := true
+
+if compressionSetup
+    if shortEmaDirection
+        if shortRangeBreak
+            if barstate.isconfirmed
+                shortTriggerRaw := true
+
+//====================================================
+// Cooldown
+//====================================================
+
+var int lastLongSignalBar = na
+var int lastShortSignalBar = na
+
+longCooldownOk = true
+shortCooldownOk = true
+
+if useCooldown
+    longCooldownOk := false
+    if na(lastLongSignalBar)
+        longCooldownOk := true
+    else
+        if bar_index - lastLongSignalBar >= cooldownBars
+            longCooldownOk := true
+
+if useCooldown
+    shortCooldownOk := false
+    if na(lastShortSignalBar)
+        shortCooldownOk := true
+    else
+        if bar_index - lastShortSignalBar >= cooldownBars
+            shortCooldownOk := true
+
+longSignal = false
+shortSignal = false
+
+if longTriggerRaw
+    if longCooldownOk
+        longSignal := true
+
+if shortTriggerRaw
+    if shortCooldownOk
+        shortSignal := true
+
+if longSignal
+    lastLongSignalBar := bar_index
+
+if shortSignal
+    lastShortSignalBar := bar_index
+
+//====================================================
+// Risk Calculation
+//====================================================
+
+float longSl = na
+float shortSl = na
+float longRisk = na
+float shortRisk = na
+float longTp = na
+float shortTp = na
+
+longRiskValid = false
+shortRiskValid = false
+
+if not na(rangeLow)
+    longSl := rangeLow
+    longRisk := close - longSl
+    if longRisk > syminfo.mintick
+        longTp := close + longRisk * rr
+        longRiskValid := true
+
+if not na(rangeHigh)
+    shortSl := rangeHigh
+    shortRisk := shortSl - close
+    if shortRisk > syminfo.mintick
+        shortTp := close - shortRisk * rr
+        shortRiskValid := true
+
+//====================================================
+// Entry / Exit
+//====================================================
+
+canEnter = strategy.position_size == 0
+
+if longSignal
+    if canEnter
+        if longRiskValid
+            strategy.entry("Long", strategy.long)
+            strategy.exit("Long Exit", from_entry = "Long", stop = longSl, limit = longTp)
+
+if shortSignal
+    if canEnter
+        if shortRiskValid
+            strategy.entry("Short", strategy.short)
+            strategy.exit("Short Exit", from_entry = "Short", stop = shortSl, limit = shortTp)
+
+//====================================================
+// Background
+//====================================================
+
+bgColorValue = color.new(color.white, 100)
+
+if showCompressionBg
+    if compressionSetup
+        bgColorValue := color.new(color.yellow, 88)
+
+bgcolor(bgColorValue)
+
+//====================================================
+// Entry Signals
+//====================================================
+
+plotshape(showSignals and longSignal, title = "Long Breakout", style = shape.triangleup, location = location.belowbar, color = color.lime, size = size.small, text = "L")
+plotshape(showSignals and shortSignal, title = "Short Breakout", style = shape.triangledown, location = location.abovebar, color = color.red, size = size.small, text = "S")
+
+//====================================================
+// Alerts
+//====================================================
+
+alertcondition(longSignal, title = "Long Breakout", message = "EMA Compression Breakout Strategy v1 Long Trigger")
+alertcondition(shortSignal, title = "Short Breakout", message = "EMA Compression Breakout Strategy v1 Short Trigger")
