@@ -234,11 +234,30 @@ if shortPosition
             shortActualTp := shortEntryPrice - shortActualRisk * rr
             shortExitValid := true
 
+invalidLongExit = false
+invalidShortExit = false
+
+if longPosition
+    if not na(plannedLongStop)
+        if not longExitValid
+            invalidLongExit := true
+
+if shortPosition
+    if not na(plannedShortStop)
+        if not shortExitValid
+            invalidShortExit := true
+
 if longExitValid
     strategy.exit("Long Exit", from_entry = "Long", stop = plannedLongStop, limit = longActualTp)
 
 if shortExitValid
     strategy.exit("Short Exit", from_entry = "Short", stop = plannedShortStop, limit = shortActualTp)
+
+if invalidLongExit
+    strategy.close("Long", comment = "Invalid Long Risk")
+
+if invalidShortExit
+    strategy.close("Short", comment = "Invalid Short Risk")
 
 //====================================================
 // Reset Planned Stops After Position Closed
