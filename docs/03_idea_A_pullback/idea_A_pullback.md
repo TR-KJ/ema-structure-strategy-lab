@@ -113,3 +113,17 @@ TP：
 
 Indicator v1の挙動は問題なし。
 次は同一ロジックでStrategy v1を作成する。
+
+### v1.2 未決済トレード発生メモ
+
+v1.2ではTP/SLを strategy.position_avg_price 基準に変更した。
+
+しかし、実際の約定価格と保存済みSLの位置関係によって、Riskが無効になるケースが発生した。
+
+Longでは `strategy.position_avg_price <= plannedLongStop` の場合、longActualRiskが無効となり、strategy.exitが発注されない。
+
+Shortでも同様に、`strategy.position_avg_price >= plannedShortStop` の場合、shortActualRiskが無効となる。
+
+その結果、SL/TPが出ず、未決済ポジションが残るケースが確認された。
+
+v1.2は診断版として扱い、無効Risk時はstrategy.closeで強制決済する修正を検討する。
