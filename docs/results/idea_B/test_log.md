@@ -180,6 +180,14 @@ compressionTicks が小さいほど収縮判定は厳しくなり、大きいほ
 - compressionTicksを狭めるとトレード数が少なすぎないか
 - 平均トレードが改善するか
 
-### 暫定結論
+### Compression Ticks Test 評価
 
-未記録。
+Costなしで compressionTicks 30 / 50 / 70 / 100 を比較した。
+
+結果はすべてPF 1.0前後であり、明確な優位性の山は確認できなかった。
+
+compressionTicks 50 が最も良かったが、PF 1.001、平均トレード 0.01 であり、実質的には損益分岐。
+
+この結果から、現時点の案B v1においては、compressionTicksの調整だけでは優位性は作れないと判断する。
+
+次は compressionTicks ではなく、Breakout後の出口設計またはRange幅フィルターを検証する。
