@@ -191,3 +191,53 @@ compressionTicks 50 が最も良かったが、PF 1.001、平均トレード 0.0
 この結果から、現時点の案B v1においては、compressionTicksの調整だけでは優位性は作れないと判断する。
 
 次は compressionTicks ではなく、Breakout後の出口設計またはRange幅フィルターを検証する。
+
+## Strategy v1 RR Diagnostic Test
+
+### 目的
+
+compressionTicksを変更してもCostなしPFはほぼ1.0前後であり、EMA収縮閾値の調整だけでは優位性が確認できなかった。
+
+次に、Breakout後の出口設計としてRRを変更し、PF・勝率・平均トレードが改善するか確認する。
+
+まずはCostなしで比較し、ロジック単体に伸ばす余地があるかを確認する。
+
+### 共通条件
+
+| 項目 | 内容 |
+|---|---|
+| 手法 | Idea B EMA Compression Breakout Strategy v1 |
+| 時間足 | 1分足 |
+| 検証期間 | 2021/01/01〜2025/12/31 |
+| EMA | 20 / 50 / 100 |
+| compressionTicks | 50 |
+| compressionLookback | 20 |
+| requiredCompressionBars | 10 |
+| rangeLen | 20 |
+| Cooldown | ON |
+| cooldownBars | 20 |
+| HTFフィルター | なし |
+| 決済 | SL/TPのみ |
+| Commission | 0 |
+| Slippage | 0 |
+
+### Costなし結果
+
+| RR | PF | 勝率 | 総トレード数 | 最大DD | 平均トレード | 平均勝ち | 平均負け | メモ |
+|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 1.0 | 1.001 | 49.21% | 16,166 | 0.34% | 0.01 | 18.47 | 17.88 | 基準 |
+| 1.3 |  |  |  |  |  |  |  |  |
+| 1.5 |  |  |  |  |  |  |  |  |
+| 2.0 |  |  |  |  |  |  |  |  |
+
+### 評価ポイント
+
+- RRを上げてPFが改善するか
+- 勝率低下に対して平均勝ちが十分伸びるか
+- 平均トレードがプラス方向に伸びるか
+- RR変更だけでPF 1.1以上が出るか
+- RRを上げてもPFが1.0前後なら、出口だけでは改善不可
+
+### 暫定結論
+
+未記録。
